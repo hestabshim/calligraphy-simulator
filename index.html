@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Calligraphy Simulator</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' fill='none' stroke='%23c9442e' stroke-width='2'/%3E%3Cpath d='M16 3v26M3 16h26' stroke='%23c9442e' stroke-dasharray='2 2'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <main class="app" id="app" data-view="write">
+      <div class="stage">
+        <header class="topbar">
+          <h1 class="title">CHINESE CALLIGRAPHY SIMULATOR</h1>
+          <p class="arrange-summary" id="arrange-summary" aria-live="polite"></p>
+          <nav class="sheet-nav" aria-label="Sheets">
+            <span class="sheet-chars" id="sheet-chars" lang="zh"></span>
+            <button class="icon-btn" id="prev-sheet" type="button" aria-label="Previous sheet" title="Previous sheet (←)">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <span class="sheet-label" id="sheet-label" aria-live="polite">Sheet 1</span>
+            <button class="icon-btn" id="next-sheet" type="button" aria-label="Next sheet" title="Next sheet (→)">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </nav>
+        </header>
+
+        <section class="mat" aria-label="Writing area">
+          <div class="paper" id="paper" role="img" aria-label="Practice sheet">
+            <canvas id="layer-paper"></canvas>
+            <canvas id="layer-grid"></canvas>
+            <canvas id="layer-guide"></canvas>
+            <canvas id="layer-ink" class="ink"></canvas>
+            <canvas id="layer-halo" class="ink"></canvas>
+            <canvas id="layer-live" class="ink"></canvas>
+            <div class="brush-ring" id="brush-ring" aria-hidden="true"></div>
+          </div>
+          <div class="arrange" id="arrange" hidden>
+            <canvas id="arrange-canvas" tabindex="0" role="img" aria-roledescription="arrangement"></canvas>
+            <p class="arrange-empty" id="arrange-empty" hidden>Nothing written yet. Switch to Write and fill a few cells, then come back to arrange them.</p>
+          </div>
+        </section>
+
+        <aside class="panel" aria-label="Settings">
+          <div class="seg view-switch" data-name="view" role="radiogroup" aria-label="View">
+            <label><input type="radio" name="view" value="write" checked />Write</label>
+            <label><input type="radio" name="view" value="arrange" />Arrange</label>
+          </div>
+
+          <form class="controls" id="controls" autocomplete="off">
+            <fieldset class="group">
+              <legend class="group-head"><span>Mode</span><span class="hint" id="hint-mode"></span></legend>
+              <div class="seg" data-name="mode">
+                <label><input type="radio" name="mode" value="set" />字帖</label>
+                <label><input type="radio" name="mode" value="random" />随机</label>
+                <label><input type="radio" name="mode" value="free" />自由</label>
+              </div>
+              <div class="set-block" id="set-block">
+                <label class="visually-hidden" for="set-text">Characters to practise</label>
+                <textarea id="set-text" rows="1" lang="zh" placeholder="Type or paste characters to practise" spellcheck="false"></textarea>
+                <div class="set-actions">
+                  <label class="btn btn-small file-btn">
+                    <input type="file" id="set-file" accept=".txt,text/plain" />
+                    Upload .txt
+                  </label>
+                  <label class="visually-hidden" for="set-preset">Load a preset</label>
+                  <select id="set-preset" class="btn btn-small">
+                    <option value="">Presets</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="group">
+              <legend class="group-head"><span>Grid</span><span class="hint" id="hint-grid"></span></legend>
+              <div class="seg seg-icons" data-name="grid">
+                <label title="田字格 Field grid"><input type="radio" name="grid" value="tian" aria-label="Field grid, 田字格" /><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="1.5" y="1.5" width="17" height="17"/><path class="d" d="M10 1.5v17M1.5 10h17"/></svg></label>
+                <label title="米字格 Rice grid"><input type="radio" name="grid" value="mi" aria-label="Rice grid, 米字格" /><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="1.5" y="1.5" width="17" height="17"/><path class="d" d="M10 1.5v17M1.5 10h17M1.5 1.5l17 17M18.5 1.5l-17 17"/></svg></label>
+                <label title="九宫格 Nine-palace grid"><input type="radio" name="grid" value="jiugong" aria-label="Nine-palace grid, 九宫格" /><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="1.5" y="1.5" width="17" height="17"/><path class="d" d="M7.17 1.5v17M12.83 1.5v17M1.5 7.17h17M1.5 12.83h17"/></svg></label>
+                <label title="回宫格 Centre-box grid"><input type="radio" name="grid" value="huigong" aria-label="Centre-box grid, 回宫格" /><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="1.5" y="1.5" width="17" height="17"/><rect x="5.6" y="5.6" width="8.8" height="8.8"/><path class="d" d="M10 1.5v17M1.5 10h17"/></svg></label>
+                <label title="方格 Plain square"><input type="radio" name="grid" value="fang" aria-label="Plain square, 方格" /><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="1.5" y="1.5" width="17" height="17"/></svg></label>
+              </div>
+            </fieldset>
+
+            <div class="pair">
+              <fieldset class="group">
+                <legend class="group-head"><span>Cells</span></legend>
+                <div class="seg seg-tight" data-name="cells">
+                  <label title="1 × 1"><input type="radio" name="cells" value="1" aria-label="1 by 1" />1</label>
+                  <label title="2 × 2"><input type="radio" name="cells" value="2" aria-label="2 by 2" />4</label>
+                  <label title="3 × 3"><input type="radio" name="cells" value="3" aria-label="3 by 3" />9</label>
+                  <label title="4 × 4"><input type="radio" name="cells" value="4" aria-label="4 by 4" />16</label>
+                </div>
+              </fieldset>
+              <fieldset class="group" id="guide-group">
+                <legend class="group-head"><span>Guide</span></legend>
+                <div class="seg seg-tight" data-name="guide">
+                  <label title="描红 Trace over faint characters"><input type="radio" name="guide" value="trace" aria-label="Trace, 描" />描</label>
+                  <label title="临 Copy from a model in each row"><input type="radio" name="guide" value="copy" aria-label="Copy, 临" />临</label>
+                  <label title="No guide"><input type="radio" name="guide" value="off" aria-label="Off" />无</label>
+                </div>
+              </fieldset>
+            </div>
+
+            <fieldset class="group">
+              <legend class="group-head"><span>Brush</span><span class="hint" id="hint-brush"></span></legend>
+              <div class="seg" data-name="brush">
+                <label><input type="radio" name="brush" value="wolf" aria-label="Weasel hair, 狼毫" />狼毫</label>
+                <label><input type="radio" name="brush" value="mixed" aria-label="Mixed hair, 兼毫" />兼毫</label>
+                <label><input type="radio" name="brush" value="goat" aria-label="Goat hair, 羊毫" />羊毫</label>
+              </div>
+            </fieldset>
+
+            <div class="group">
+              <div class="group-head"><label for="size">Size</label><output id="size-out" for="size" class="hint"></output></div>
+              <input type="range" id="size" name="size" min="5" max="100" step="1" />
+            </div>
+
+            <fieldset class="group">
+              <legend class="group-head"><span>Ink</span><span class="hint" id="hint-tone"></span></legend>
+              <div class="seg seg-tone" data-name="tone">
+                <label><input type="radio" name="tone" value="jiao" aria-label="Scorched, 焦" /><i style="--tone: 0.99"></i>焦</label>
+                <label><input type="radio" name="tone" value="nong" aria-label="Dense, 浓" /><i style="--tone: 0.9"></i>浓</label>
+                <label><input type="radio" name="tone" value="zhong" aria-label="Heavy, 重" /><i style="--tone: 0.72"></i>重</label>
+                <label><input type="radio" name="tone" value="dan" aria-label="Light, 淡" /><i style="--tone: 0.45"></i>淡</label>
+                <label><input type="radio" name="tone" value="qing" aria-label="Clear, 清" /><i style="--tone: 0.24"></i>清</label>
+              </div>
+            </fieldset>
+
+            <div class="pair">
+              <fieldset class="group">
+                <legend class="group-head"><span>Colour</span></legend>
+                <div class="seg seg-tight" data-name="ink">
+                  <label title="墨 Black ink"><input type="radio" name="ink" value="mo" aria-label="Black ink, 墨" />墨</label>
+                  <label title="朱 Vermilion ink"><input type="radio" name="ink" value="zhu" aria-label="Vermilion ink, 朱" />朱</label>
+                </div>
+              </fieldset>
+              <fieldset class="group">
+                <legend class="group-head"><span>Lines</span></legend>
+                <div class="seg seg-tight" data-name="gridColor">
+                  <label title="Vermilion lines"><input type="radio" name="gridColor" value="zhu" aria-label="Vermilion lines" /><b class="dot" style="--c: var(--zhu)"></b></label>
+                  <label title="Grey lines"><input type="radio" name="gridColor" value="hui" aria-label="Grey lines" /><b class="dot" style="--c: #8f8f8b"></b></label>
+                  <label title="No lines"><input type="radio" name="gridColor" value="off" aria-label="No lines" />无</label>
+                </div>
+              </fieldset>
+            </div>
+
+            <fieldset class="group">
+              <legend class="group-head"><span>Paper</span><span class="hint" id="hint-paper"></span></legend>
+              <div class="seg" data-name="paper">
+                <label><input type="radio" name="paper" value="raw" aria-label="Raw xuan, 生宣" />生宣</label>
+                <label><input type="radio" name="paper" value="half" aria-label="Half-sized xuan, 半熟宣" />半熟</label>
+                <label><input type="radio" name="paper" value="sized" aria-label="Sized xuan, 熟宣" />熟宣</label>
+                <label><input type="radio" name="paper" value="maobian" aria-label="Bamboo paper, 毛边纸" />毛边</label>
+              </div>
+            </fieldset>
+          </form>
+
+          <form class="controls" id="arrange-controls" autocomplete="off" hidden>
+            <fieldset class="group">
+              <legend class="group-head"><span>Direction</span><span class="hint" id="hint-direction"></span></legend>
+              <div class="seg" data-name="direction">
+                <label><input type="radio" name="direction" value="vertical" aria-label="Vertical columns, right to left, 竖排" />竖排</label>
+                <label><input type="radio" name="direction" value="horizontal" aria-label="Horizontal rows, 横排" />横排</label>
+              </div>
+            </fieldset>
+
+            <div class="group">
+              <div class="group-head"><label for="per-line" id="per-line-label">Per column</label><output id="per-line-out" for="per-line" class="hint"></output></div>
+              <input type="range" id="per-line" min="1" max="12" step="1" />
+            </div>
+
+            <div class="group">
+              <div class="group-head"><label for="gap">Spacing</label><output id="gap-out" for="gap" class="hint"></output></div>
+              <input type="range" id="gap" min="0" max="60" step="5" />
+            </div>
+
+            <label class="check"><input type="checkbox" id="arrange-grid" /> Grid in each cell</label>
+
+            <div class="group">
+              <div class="group-head"><span>Selected</span><span class="hint" id="selected-out">None</span></div>
+              <div class="set-actions three">
+                <button class="btn btn-small" type="button" id="move-earlier">Earlier</button>
+                <button class="btn btn-small" type="button" id="move-later">Later</button>
+                <button class="btn btn-small" type="button" id="hide-piece">Hide</button>
+              </div>
+              <button class="btn btn-small" type="button" id="restore-hidden" hidden>Show hidden</button>
+            </div>
+
+            <p class="help">Drag a character to move it. Paper, grid style and line colour follow your Write settings.</p>
+          </form>
+
+          <div class="panel-foot">
+            <div class="load-row write-only">
+              <span class="load-label" id="load-label">Brush ink</span>
+              <div class="load-bar" id="load-bar" role="meter" aria-labelledby="load-label" aria-valuemin="0" aria-valuemax="100"><span></span></div>
+              <button class="btn btn-small" id="dip" type="button" title="Dip the brush (D)">Dip</button>
+            </div>
+            <label class="check write-only"><input type="checkbox" id="auto-dip" /> Dip before every stroke</label>
+            <p class="status" id="status" aria-live="polite"></p>
+            <div class="actions">
+              <button class="btn write-only" id="undo" type="button" title="Undo (⌘Z)">Undo</button>
+              <button class="btn write-only" id="clear" type="button">Clear</button>
+              <button class="btn btn-primary" id="export-btn" type="button" popovertarget="export-pop">Export</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <div popover id="export-pop" class="export-pop" aria-label="Export sheet">
+      <fieldset class="group">
+        <legend class="group-head"><span>Format</span></legend>
+        <div class="seg seg-tight" data-name="format">
+          <label><input type="radio" name="format" value="png" checked />PNG</label>
+          <label><input type="radio" name="format" value="jpeg" />JPG</label>
+          <label><input type="radio" name="format" value="webp" />WebP</label>
+        </div>
+      </fieldset>
+      <fieldset class="group">
+        <legend class="group-head"><span>Size</span></legend>
+        <div class="seg seg-tight" data-name="exportSize">
+          <label><input type="radio" name="exportSize" value="1024" />1024 px</label>
+          <label><input type="radio" name="exportSize" value="2048" checked />2048 px</label>
+          <label class="arrange-only"><input type="radio" name="exportSize" value="4096" />4096 px</label>
+        </div>
+      </fieldset>
+      <fieldset class="group checks">
+        <legend class="group-head"><span>Include</span></legend>
+        <label class="check"><input type="checkbox" id="ex-paper" checked /> Paper</label>
+        <label class="check"><input type="checkbox" id="ex-grid" checked /> Grid lines</label>
+        <label class="check write-only"><input type="checkbox" id="ex-guide" /> Guide characters</label>
+      </fieldset>
+      <p class="hint export-note" id="export-note"></p>
+      <button class="btn btn-primary btn-block" id="download" type="button">Download</button>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

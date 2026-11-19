@@ -1,0 +1,861 @@
+/* Neue Haas Grotesk Display Pro is a licensed face; these resolve to the locally installed cuts.
+   Safari only exposes system fonts to pages, so it falls back to Helvetica Neue. */
+@font-face {
+  font-family: 'NHG';
+  font-weight: 400;
+  src: local('NeueHaasDisplay-Roman'), local('Neue Haas Grotesk Display Pro 55 Roman'), local('NeueHaasGroteskDisp Pro Rmn');
+}
+@font-face {
+  font-family: 'NHG';
+  font-weight: 500;
+  src: local('NeueHaasDisplay-Mediu'), local('NeueHaasDisplay-Medium'), local('Neue Haas Grotesk Display Pro 65 Medium'), local('NeueHaasGroteskDisp Pro Md');
+}
+
+:root {
+  --page: #ffffff;
+  --text: #000000;
+  --muted: #555555;
+  --well: rgb(0 0 0 / 0.05);
+  --well-hover: rgb(0 0 0 / 0.09);
+  --raised: #ffffff;
+  --zhu: #c9442e;
+  --focus: #000000;
+
+  --sans: 'NHG', 'Neue Haas Grotesk Display Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --kai: 'LXGW WenKai', 'Kaiti SC', 'STKaiti', 'KaiTi', serif;
+
+  /* From the Figma frame (1728 × 1117): 731.77 square sheet, 33.9 gap, 256.7 panel column. */
+  --panel-w: 256.7px;
+  --gap: 33.9px;
+  --size: min(731.77px, calc(100svh - 112px), calc(100vw - 48px - var(--gap) - var(--panel-w)));
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  font-kerning: normal;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────── */
+
+.app {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: var(--size) var(--panel-w);
+  grid-template-rows: auto var(--size);
+  column-gap: var(--gap);
+  row-gap: 2px;
+}
+
+.topbar {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 26px;
+  padding-inline: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.sheet-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sheet-chars {
+  font-family: var(--kai);
+  font-size: 17px;
+  margin-right: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 14em;
+  letter-spacing: 0.08em;
+}
+
+.sheet-label {
+  font-variant-numeric: tabular-nums;
+  min-width: 5.5em;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.mat {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+}
+
+.paper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  isolation: isolate;
+  touch-action: none;
+  cursor: none;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.07), 0 1px 3px rgb(0 0 0 / 0.06);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.paper canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.paper .ink {
+  mix-blend-mode: multiply;
+}
+
+#layer-halo {
+  opacity: 0;
+}
+
+.brush-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  border: 1px solid rgb(0 0 0 / 0.35);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.5);
+  pointer-events: none;
+  opacity: 0;
+  translate: -50% -50%;
+}
+
+.paper.is-hovering .brush-ring {
+  opacity: 1;
+}
+
+/* ── Panel ──────────────────────────────────────────────────────────── */
+
+.panel {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.controls {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 3px 3px 8px;
+  margin: -3px -3px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* A fade at the bottom edge shows there is more to scroll to. */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+  scrollbar-width: thin;
+}
+
+.group {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  font-weight: 500;
+  font-size: 12px;
+  float: left; /* lets a legend behave as a flex row */
+}
+
+.group-head + * {
+  clear: both;
+}
+
+.hint {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Segmented control built from native radios. */
+.seg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--well);
+  border-radius: 10px;
+}
+
+.seg label {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 8px;
+  font-family: var(--kai);
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.seg input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.seg label:hover {
+  background: rgb(255 255 255 / 0.6);
+}
+
+.seg label:has(input:checked) {
+  background: var(--raised);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+.seg label:has(input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
+.seg label:has(input:disabled) {
+  cursor: not-allowed;
+  color: var(--muted);
+}
+
+.seg fieldset:disabled label:hover,
+fieldset:disabled .seg label:hover {
+  background: none;
+}
+
+.seg-tight label {
+  font-size: 13px;
+}
+
+.seg-tight label:not(:has(.dot)) {
+  font-family: var(--sans);
+}
+
+[data-name='guide'] label,
+[data-name='ink'] label,
+[data-name='gridColor'] label:last-child {
+  font-family: var(--kai);
+  font-size: 14px;
+}
+
+.seg-icons svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+}
+
+.seg-icons svg .d {
+  stroke-dasharray: 1.6 1.4;
+  stroke-width: 0.9;
+}
+
+.seg-tone label {
+  gap: 4px;
+}
+
+.seg-tone i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgb(20 19 17 / var(--tone));
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15);
+  flex: none;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+fieldset:disabled {
+  opacity: 0.5;
+}
+
+input[type='range'] {
+  width: 100%;
+  margin: 4px 0 0;
+  accent-color: var(--text);
+}
+
+.set-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.set-block[hidden] {
+  display: none;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 44px;
+  max-height: 160px;
+  border: 0;
+  border-radius: 10px;
+  padding: 7px 9px;
+  background: var(--well);
+  font-family: var(--kai);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+textarea::placeholder {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.set-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+
+.btn {
+  appearance: none;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: var(--well);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--well-hover);
+}
+
+.btn:active {
+  scale: 0.98;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  color: #767676;
+  background: rgb(0 0 0 / 0.03);
+  scale: none;
+}
+
+.btn-small {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.btn-primary {
+  background: var(--text);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #2a2a2a;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+select.btn {
+  font-weight: 500;
+  text-align: left;
+  padding-right: 22px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5 5 6.5 8 3.5' fill='none' stroke='black' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  min-width: 0;
+}
+
+.file-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.file-btn input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-btn:has(input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.icon-btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--well);
+}
+
+.icon-btn:disabled {
+  color: #b5b5b5;
+  cursor: not-allowed;
+  background: none;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.check input {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  accent-color: var(--text);
+}
+
+/* ── Views ──────────────────────────────────────────────────────────── */
+
+.view-switch {
+  margin: 0 0 16px;
+  flex: none;
+}
+
+.view-switch label {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+[data-view='arrange'] .write-only,
+[data-view='write'] .arrange-only {
+  display: none !important;
+}
+
+.arrange-summary {
+  display: none;
+  margin: 0;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+[data-view='arrange'] .arrange-summary {
+  display: block;
+}
+
+[data-view='arrange'] .sheet-nav {
+  display: none;
+}
+
+[data-view='arrange'] .actions {
+  grid-template-columns: 1fr;
+}
+
+.arrange {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.arrange canvas {
+  display: block;
+  touch-action: none;
+  cursor: grab;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.07), 0 1px 3px rgb(0 0 0 / 0.06);
+}
+
+.arrange canvas:active {
+  cursor: grabbing;
+}
+
+.arrange canvas:focus-visible {
+  outline-offset: 4px;
+}
+
+.arrange-empty {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  max-width: 30ch;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.set-actions.three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.help {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ── Panel footer ───────────────────────────────────────────────────── */
+
+.panel-foot {
+  padding: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.load-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.load-label {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.load-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--well);
+  overflow: hidden;
+}
+
+.load-bar span {
+  display: block;
+  height: 100%;
+  width: calc(var(--load, 1) * 100%);
+  background: var(--text);
+  border-radius: inherit;
+  transition: width 200ms ease-out;
+}
+
+.load-bar.is-low span {
+  background: var(--zhu);
+}
+
+.status {
+  margin: 0;
+  min-height: 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+/* ── Export popover ─────────────────────────────────────────────────── */
+
+.export-pop {
+  margin: 0;
+  inset: auto;
+  width: 240px;
+  padding: 14px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 12px 32px rgb(0 0 0 / 0.16);
+  flex-direction: column;
+  gap: 12px;
+}
+
+.export-pop:popover-open {
+  display: flex;
+}
+
+.export-pop .seg {
+  background: rgb(0 0 0 / 0.07);
+}
+
+.export-pop .seg label:has(input:checked) {
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.12), 0 1px 2px rgb(0 0 0 / 0.1);
+}
+
+.export-pop .checks {
+  gap: 7px;
+}
+
+.export-note {
+  margin: 0;
+  text-align: left;
+  white-space: normal;
+}
+
+.export-note:empty {
+  display: none;
+}
+
+/* ── Phones and portrait tablets: sheet on top, tools right under it ─ */
+
+@media (max-width: 760px), (orientation: portrait) and (max-width: 1100px) {
+  :root {
+    --size: min(calc(100vw - 32px), calc(100svh - 190px));
+  }
+
+  .app {
+    padding: 12px 16px 24px;
+    place-items: start center;
+  }
+
+  .stage {
+    grid-template-columns: var(--size);
+    grid-template-rows: auto var(--size) auto;
+    row-gap: 8px;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    row-gap: 2px;
+    padding-inline: 0;
+  }
+
+  .title {
+    font-size: clamp(15px, 4.4vw, 20px);
+  }
+
+  .sheet-nav {
+    margin-left: auto;
+  }
+
+  .panel {
+    grid-column: 1;
+    grid-row: 3;
+    margin-top: 6px;
+    overflow: visible;
+  }
+
+  /* Undo, clear, dip and export sit right under the sheet; settings follow. */
+  .view-switch {
+    order: -2;
+    margin-bottom: 10px;
+  }
+
+  .panel-foot {
+    order: -1;
+    padding: 0 0 18px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgb(0 0 0 / 0.08);
+  }
+
+  .controls {
+    overflow: visible;
+    mask-image: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .seg label {
+    height: 36px;
+  }
+
+  .btn {
+    height: 40px;
+  }
+
+  .btn-small {
+    height: 34px;
+  }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .paper,
+  .arrange {
+    width: var(--size);
+  }
+}
+
+/* Wide portrait screens (tablets): settings in two columns. */
+@media (orientation: portrait) and (min-width: 600px) and (max-width: 1100px) {
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 28px;
+    row-gap: 16px;
+    align-items: start;
+  }
+}
+
+/* Phones held sideways: keep the sheet as tall as the screen allows. */
+@media (orientation: landscape) and (max-height: 520px) {
+  :root {
+    --size: min(731.77px, calc(100svh - 52px), calc(100vw - 40px - var(--gap) - var(--panel-w)));
+    --gap: 20px;
+  }
+
+  .app {
+    padding: 8px 20px;
+  }
+
+  .title {
+    font-size: 15px;
+  }
+
+  .topbar {
+    min-height: 24px;
+  }
+
+  .sheet-chars {
+    display: none;
+  }
+
+  /* Too short for a fixed footer: tools first, then everything scrolls together. */
+  .panel {
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .view-switch {
+    order: -2;
+    margin-bottom: 10px;
+  }
+
+  .panel-foot {
+    order: -1;
+    padding: 0 0 14px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgb(0 0 0 / 0.08);
+  }
+
+  .controls {
+    flex: none;
+    overflow: visible;
+    mask-image: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .load-bar span {
+    transition: none;
+  }
+  .btn:active {
+    scale: none;
+  }
+}
+
+[data-view='arrange'] .status:empty {
+  display: none;
+}
